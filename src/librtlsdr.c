@@ -1636,7 +1636,10 @@ found:
 	if(dev->force_bt) rtlsdr_set_gpio(dev, 0, 1);
 	/* Hack to force direct sampling mode to always be on if we set the remote-enabled bit in the EEPROM to 1. Default on EEPROM is 0. */
 	dev->force_ds = (buf[7] & 0x01) ? 1 : 0;
-	if(dev->force_ds) dev->tuner_type = RTLSDR_TUNER_UNKNOWN;
+	if(dev->force_ds) {
+		dev->tuner_type = RTLSDR_TUNER_UNKNOWN;
+		rtlsdr_set_direct_sampling(dev, 2);
+	}
 
 
 	if (dev->tuner->init)
