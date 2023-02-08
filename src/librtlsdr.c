@@ -1636,16 +1636,16 @@ found:
 	if(dev->force_bt) rtlsdr_set_gpio(dev, 0, 1);
 	/* Hack to force direct sampling mode to always be on if we set the remote-enabled bit in the EEPROM to 1. Default on EEPROM is 0. */
 	dev->force_ds = (buf[7] & 0x01) ? 1 : 0;
-	if(dev->force_ds) {
-		dev->tuner_type = RTLSDR_TUNER_UNKNOWN;
-		rtlsdr_set_direct_sampling(dev, 2);
-	}
-
 
 	if (dev->tuner->init)
 		r = dev->tuner->init(dev);
 
 	rtlsdr_set_i2c_repeater(dev, 0);
+
+	if(dev->force_ds) {
+		dev->tuner_type = RTLSDR_TUNER_UNKNOWN;
+		rtlsdr_set_direct_sampling(dev, 2);
+	}
 
 	*out_dev = dev;
 
@@ -1918,7 +1918,7 @@ int rtlsdr_read_async(rtlsdr_dev_t *dev, rtlsdr_read_async_cb_t cb, void *ctx,
 		r = libusb_submit_transfer(dev->xfer[i]);
 		if (r < 0) {
 			fprintf(stderr, "Failed to submit transfer %i\n"
-					"Please increase your allowed " 
+					"Please increase your allowed "
 					"usbfs buffer size with the "
 					"following command:\n"
 					"echo 0 > /sys/module/usbcore"

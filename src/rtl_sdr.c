@@ -34,7 +34,7 @@
 #include "rtl-sdr.h"
 #include "convenience/convenience.h"
 
-#define DEFAULT_SAMPLE_RATE		2048000
+#define DEFAULT_SAMPLE_RATE		1500000
 #define DEFAULT_BUF_LENGTH		(16 * 16384)
 #define MINIMAL_BUF_LENGTH		512
 #define MAXIMAL_BUF_LENGTH		(256 * 16384)
@@ -48,13 +48,17 @@ void usage(void)
 	fprintf(stderr,
 		"rtl_sdr, an I/Q recorder for RTL2832 based DVB-T receivers\n\n"
 		"Usage:\t -f frequency_to_tune_to [Hz]\n"
-		"\t[-s samplerate (default: 2048000 Hz)]\n"
+		"\t[-s samplerate (default: 1500000 Hz)]\n"
 		"\t[-d device_index (default: 0)]\n"
 		"\t[-g gain (default: 0 for auto)]\n"
 		"\t[-p ppm_error (default: 0)]\n"
 		"\t[-b output_block_size (default: 16 * 16384)]\n"
 		"\t[-n number of samples to read (default: 0, infinite)]\n"
 		"\t[-S force sync output (default: async)]\n"
+		"\t[-E enable_option (default: none)]\n"
+		"\t[use multiple -E to enable multiple options]\n"
+		"\t[direct:  enable direct sampling 1 (usually I)]\n"
+		"\t[direct2: enable direct sampling 2 (usually Q)]\n"
 		"\tfilename (a '-' dumps samples to stdout)\n\n");
 	exit(1);
 }
@@ -113,15 +117,16 @@ int main(int argc, char **argv)
 	int gain = 0;
 	int ppm_error = 0;
 	int sync_mode = 0;
+	int direct_sampling = 0;
 	FILE *file;
 	uint8_t *buffer;
 	int dev_index = 0;
 	int dev_given = 0;
-	uint32_t frequency = 100000000;
+	uint32_t frequency = 1500000;
 	uint32_t samp_rate = DEFAULT_SAMPLE_RATE;
 	uint32_t out_block_size = DEFAULT_BUF_LENGTH;
 
-	while ((opt = getopt(argc, argv, "d:f:g:s:b:n:p:S")) != -1) {
+	while ((opt = getopt(argc, argv, "d:f:g:s:b:n:p:S:E:")) != -1) {
 		switch (opt) {
 		case 'd':
 			dev_index = verbose_device_search(optarg);
@@ -147,6 +152,12 @@ int main(int argc, char **argv)
 			break;
 		case 'S':
 			sync_mode = 1;
+			break;
+		case 'E':
+			if (strcmp("direct",  optarg) == 0) {
+				direct_sampling = 1;}
+			if (strcmp("direct2", optarg) == 0) {
+				direct_sampling = 2;}
 			break;
 		default:
 			usage();
@@ -197,11 +208,6 @@ int main(int argc, char **argv)
 #else
 	SetConsoleCtrlHandler( (PHANDLER_ROUTINE) sighandler, TRUE );
 #endif
-	/* Set the sample rate */
-	verbose_set_sample_rate(dev, samp_rate);
-
-	/* Set the frequency */
-	verbose_set_frequency(dev, frequency);
 
 	if (0 == gain) {
 		 /* Enable automatic gain */
@@ -211,6 +217,15 @@ int main(int argc, char **argv)
 		gain = nearest_gain(dev, gain);
 		verbose_gain_set(dev, gain);
 	}
+
+	if(direct_sampling)
+		verbose_direct_sampling(dev, direct_sampling);
+
+	/* Set the frequency */
+	verbose_set_frequency(dev, frequency);
+
+	/* Set the sample rate */
+	verbose_set_sample_rate(dev, samp_rate);
 
 	verbose_ppm_set(dev, ppm_error);
 
