@@ -59,6 +59,7 @@ void usage(void)
 		"\t[use multiple -E to enable multiple options]\n"
 		"\t[direct:  enable direct sampling 1 (usually I)]\n"
 		"\t[direct2: enable direct sampling 2 (usually Q)]\n"
+		"\t[-t bias_on (default: 0)]\n"
 		"\tfilename (a '-' dumps samples to stdout)\n\n");
 	exit(1);
 }
@@ -125,8 +126,10 @@ int main(int argc, char **argv)
 	uint32_t frequency = 1500000;
 	uint32_t samp_rate = DEFAULT_SAMPLE_RATE;
 	uint32_t out_block_size = DEFAULT_BUF_LENGTH;
+	uint32_t bias_on = 0;
+	uint32_t gpio_pin = 0;
 
-	while ((opt = getopt(argc, argv, "d:f:g:s:b:n:p:SE:")) != -1) {
+	while ((opt = getopt(argc, argv, "d:f:g:s:b:n:p:SE:t:")) != -1) {
 		switch (opt) {
 		case 'd':
 			dev_index = verbose_device_search(optarg);
@@ -158,6 +161,9 @@ int main(int argc, char **argv)
 				direct_sampling = 1;}
 			if (strcmp("direct2", optarg) == 0) {
 				direct_sampling = 2;}
+			break;
+		case 't':
+			bias_on = atoi(optarg);
 			break;
 		default:
 			usage();
@@ -217,6 +223,8 @@ int main(int argc, char **argv)
 		gain = nearest_gain(dev, gain);
 		verbose_gain_set(dev, gain);
 	}
+
+	rtlsdr_set_gpio(dev, gpio_pin, bias_on);
 
 	if(direct_sampling)
 		verbose_direct_sampling(dev, direct_sampling);
@@ -285,6 +293,8 @@ int main(int argc, char **argv)
 
 	if (file != stdout)
 		fclose(file);
+
+	rtlsdr_set_gpio(dev, gpio_pin, 0);
 
 	rtlsdr_close(dev);
 	free (buffer);
